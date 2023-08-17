@@ -215,87 +215,7 @@
     
             <!-- Entry (Looping) -->
             
-            <div class="entry">
-                <!-- Numbering -->
-                <p class="numbering">1</p>
-    
-                <!-- voting -->
-                <div class="voting">
-                    <a href="#" class="upvote">
-                        <span style="display:none;">entry_5</span>
-                        <i class="fa fa-arrow-up"></i>
-                    </a>
-    
-                    <p class="count">75</p>
-    
-                    <a href="#" class="downvote">
-                        <span style="display:none;">entry_5</span>
-                        <i class="fa fa-arrow-down"></i>
-                    </a>
-                </div>
-    
-                <!-- thumbnail -->
-                <a href="#" class="thumbnail link"></a>
-    
-                <!-- topic -->
-                <div class="topic">
-                    <div class="title">
-                        <a href="#" class="link">
-                            Richard and his crew attempted to invent the Ex-Wife Sandwich™ because Nicole neglected to make one for each of them
-                        </a>
-    
-                        <a href="#" class="domain">
-                            (imgur.com)
-                        </a>
-                    </div>
-    
-                    <div class="details">
-                        <a href="#" class="btn-expand link"></a>
-    
-                        <div class="inner-details">
-                            <div class="submit-detail">
-                                <p class="submitted">
-                                    submitted 10 hours ago by
-                                </p>
-    
-                                <a href="#" class="user">
-                                    BoogsterSU2
-                                </a>
-    
-                                <p>
-                                    to
-                                </p>
-    
-                                <a href="#" class="subscribe" title="subscribe to">
-                                    <i class="fa fa-plus-circle"></i>
-                                </a>
-    
-                                <a href="#" class="subreddit-link">
-                                    r/wheredidthesodago
-                                </a>
-                            </div>
-    
-                            <div class="action-detail">
-                                <a href="#" class="comments">
-                                    875 comments
-                                </a>
-                                <a href="#" class="share">
-                                    share
-                                </a>
-                                <a href="#" class="save">
-                                    save
-                                </a>
-                                <a href="#" class="hide">
-                                    hide
-                                </a>
-                                <a href="#" class="report">
-                                    report
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
             
             <div class="entry">
                 <!-- Numbering -->
@@ -2044,4 +1964,96 @@
             Advertise - lifestyles
         </a>
     </footer>
-    </div><script></script></body></html>
+    </div><script>
+        var $ = document.querySelector.bind( document );
+        var $$ = document.querySelectorAll.bind( document );
+        var createEntry = () => {
+            var number = 21
+            return `
+                <div class="entry">
+                    <!-- Numbering -->
+                    <p class="numbering">1</p>
+        
+                    <!-- voting -->
+                    <div class="voting">
+                        <a href="#" class="upvote">
+                            <span style="display:none;">entry_5</span>
+                            <i class="fa fa-arrow-up"></i>
+                        </a>
+        
+                        <p class="count">75</p>
+        
+                        <a href="#" class="downvote">
+                            <span style="display:none;">entry_5</span>
+                            <i class="fa fa-arrow-down"></i>
+                        </a>
+                    </div>
+        
+                    <!-- thumbnail -->
+                    <a href="#" class="thumbnail link"></a>
+        
+                    <!-- topic -->
+                    <div class="topic">
+                        <div class="title">
+                            <a href="#" class="link">
+                                Richard and his crew attempted to invent the Ex-Wife Sandwich™ because Nicole neglected to make one for each of them
+                            </a>
+        
+                            <a href="#" class="domain">
+                                (imgur.com)
+                            </a>
+                        </div>
+        
+                        <div class="details">
+                            <a href="#" class="btn-expand link"></a>
+        
+                            <div class="inner-details">
+                                <div class="submit-detail">
+                                    <p class="submitted">
+                                        submitted 10 hours ago by
+                                    </p>
+        
+                                    <a href="#" class="user">
+                                        BoogsterSU2
+                                    </a>
+        
+                                    <p>
+                                        to
+                                    </p>
+        
+                                    <a href="#" class="subscribe" title="subscribe to">
+                                        <i class="fa fa-plus-circle"></i>
+                                    </a>
+        
+                                    <a href="#" class="subreddit-link">
+                                        r/wheredidthesodago
+                                    </a>
+                                </div>
+        
+                                <div class="action-detail">
+                                    <a href="#" class="comments">
+                                        875 comments
+                                    </a>
+                                    <a href="#" class="share">
+                                        share
+                                    </a>
+                                    <a href="#" class="save">
+                                        save
+                                    </a>
+                                    <a href="#" class="hide">
+                                        hide
+                                    </a>
+                                    <a href="#" class="report">
+                                        report
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        var div = document.createElement( "div" );
+        div.innerHTML = createEntry();
+        $( '.entries' ).append( div.firstElementChild );
+    </script></body></html>
