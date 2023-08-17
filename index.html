@@ -1968,11 +1968,13 @@
         var $ = document.querySelector.bind( document );
         var $$ = document.querySelectorAll.bind( document );
         var createEntry = () => {
-            var number = 21
+            var number = 21;
+            var votecount = 75;
+            var link_or_tesxt = "link";
             return `
                 <div class="entry">
                     <!-- Numbering -->
-                    <p class="numbering">1</p>
+                    <p class="numbering">${number}</p>
         
                     <!-- voting -->
                     <div class="voting">
@@ -1981,7 +1983,7 @@
                             <i class="fa fa-arrow-up"></i>
                         </a>
         
-                        <p class="count">75</p>
+                        <p class="count">${votecount}</p>
         
                         <a href="#" class="downvote">
                             <span style="display:none;">entry_5</span>
@@ -1990,7 +1992,7 @@
                     </div>
         
                     <!-- thumbnail -->
-                    <a href="#" class="thumbnail link"></a>
+                    <a href="#" class="thumbnail link">${link_or_tesxt}</a>
         
                     <!-- topic -->
                     <div class="topic">
