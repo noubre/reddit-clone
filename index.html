@@ -25,37 +25,55 @@
             console.log(pubKey);
             var relay = "wss://relay.damus.io";
             var socket = new WebSocket(relay); socket.addEventListener('message', async function (message) {
-              var [type, subId, event] = JSON.parse(message.data);
-              var {kind, content} = event || {}
-              if (!event || event === true) return
-            //   console.log('message:', event)
-              if (kind === 4) {
-                content = await decrypt(privKey, event.pubkey, content)
-              }
-            //   console.log('content:', content)
-              if ( kind === 4550 ) {
-                var now = Math.floor( Date.now() / 1000 );
-                    event = JSON.parse( content );
-                    var obj = {
-                        votecount: 0,
-                        link_or_text: "text",
-                        title: extracSubjectFromEvent( event ),
-                        username: event.pubkey.substring( 0, 20 ) + "...",
-                        subreddit: extractSubredditFromEvent( event ),
-                        how_long_ago: convertHMS( now - event.created_at ),
-                    }
-                    // console.log( obj );
-                    $( '.entries' ).append( createEntry( 0, obj[ "votecount"], obj[ "link_or_text"], obj[ "title"], obj[ "username"], obj[ "subreddit"], obj[ "how_long_ago"] ) );
+                var [type, subId, event] = JSON.parse(message.data);
+                var {kind, content} = event || {}
+                if (!event || event === true) return
+                console.log('message:', event)
+                if (kind === 4) {
+                    content = await decrypt(privKey, event.pubkey, content)
+                }
+                //   console.log('content:', content)
+                if ( kind === 4550 ) {
+                    var now = Math.floor( Date.now() / 1000 );
+                        event = JSON.parse( content );
+                        var obj = {
+                            votecount: 0,
+                            link_or_text: "text",
+                            title: extracSubjectFromEvent( event ),
+                            username: event.pubkey.substring( 0, 20 ) + "...",
+                            subreddit: extractSubredditFromEvent( event ),
+                            how_long_ago: convertHMS( now - event.created_at ),
+                        }
+                        // console.log( obj );
+                        $( '.entries' ).append( createEntry( obj[ "votecount"], obj[ "link_or_text"], obj[ "title"], obj[ "username"], obj[ "subreddit"], obj[ "how_long_ago"], 0, event.id ) );
 
-              }
-            })
+                }
+                if ( kind === 1 ) {
+                    var now = Math.floor( Date.now() / 1000 );
+                    var div = document.createElement( "div" );
+                    div.innerHTML = `
+                        <div class="metadata"></div>
+                        <div class="post_title"></div>
+                        <div class="post_content"></div>    
+
+                    `;
+                    div.getElementsByClassName( "metadata" )[ 0 ].innerText = `Posted by ${event.pubkey.substring( 0, 20 ) + "..."} ${convertHMS( now - event.created_at)}`;
+                    div.getElementsByClassName( "post_title" )[ 0 ].innerText = extracSubjectFromEvent( event );
+                    $( '.entries' ).append( div );
+                }
+            });
         
         
             socket.addEventListener('open', async function (e) {
               console.log("connected to " + relay)
 
               var subId = bitcoinjs.ECPair.makeRandom().privateKey.toString("hex").substring(0, 16)
-              var filter = { "kinds": [ 4550 ], "limit": 20 }
+              if ( !$_GET[ "post" ] ) {
+                var filter = { "kinds": [ 4550 ], "limit": 20 }
+              } else {
+                var filter = { "ids": [ $_GET[ "post" ] ] }
+              }
+              
 
               var subscription = ["REQ", subId, filter]
               console.log('Subscription:', subscription)
@@ -158,6 +176,13 @@
 
           </script>
           <script>
+            var $ = document.querySelector.bind( document );
+            var $$ = document.querySelectorAll.bind( document );
+            var url_params = new URLSearchParams( window.location.search );
+            var url_keys = url_params.keys();
+            var $_GET = {};
+            for ( var key of url_keys ) $_GET[ key ] = url_params.get( key );
+            var counter = 0;
             var extracSubjectFromEvent = event => {
                 var subject = null;
                 event.tags.every( item => {
@@ -210,6 +235,102 @@
                 return `${seconds} ${secondsstring} ago`;
 
             }
+
+            var createEntry = ( votecount, link_or_text, title, username, subreddit, how_long_ago, comments_count, post_id ) => {
+                counter = counter + 1;
+                var url = window.location.href;
+                url = url.substring( 0, url.indexOf( "?" ) );
+                if ( url.endsWith( "#" ) ) url = url.substring( 0, url.length - 1 );
+                console.log( url );
+                url += "?post=" + post_id;
+            var template = `
+                <div class="entry">
+                    <!-- Numbering -->
+                    <p class="numbering">${counter}</p>
+        
+                    <!-- voting -->
+                    <div class="voting">
+                        <a href="#" class="upvote">
+                            <span style="display:none;">entry_5</span>
+                            <i class="fa fa-arrow-up"></i>
+                        </a>
+        
+                        <p class="count">${votecount}</p>
+        
+                        <a href="#" class="downvote">
+                            <span style="display:none;">entry_5</span>
+                            <i class="fa fa-arrow-down"></i>
+                        </a>
+                    </div>
+        
+                    <!-- thumbnail -->
+                    <a href="#" class="thumbnail link ${link_or_text}"></a>
+        
+                    <!-- topic -->
+                    <div class="topic">
+                        <div class="title">
+                            <a href="${url}" class="link">
+                            </a>
+        
+                            <a href="#" class="domain">
+                                (imgur.com)
+                            </a>
+                        </div>
+        
+                        <div class="details">
+                            <a href="#" class="btn-expand ${link_or_text}"></a>
+        
+                            <div class="inner-details">
+                                <div class="submit-detail">
+                                    <p class="submitted">
+                                        submitted ${how_long_ago} by
+                                    </p>
+        
+                                    <a href="#" class="user">
+                                        ${username}
+                                    </a>
+        
+                                    <p>
+                                        to
+                                    </p>
+        
+                                    <a href="#" class="subscribe" title="subscribe to">
+                                        <i class="fa fa-plus-circle"></i>
+                                    </a>
+        
+                                    <a href="#" class="subreddit-link">
+                                    </a>
+                                </div>
+        
+                                <div class="action-detail">
+                                    <a href="#" class="comments">
+                                        <span class="comments_count">${comments_count}</span>
+                                    </a>
+                                    <a href="#" class="share">
+                                        share
+                                    </a>
+                                    <a href="#" class="save">
+                                        save
+                                    </a>
+                                    <a href="#" class="hide">
+                                        hide
+                                    </a>
+                                    <a href="#" class="report">
+                                        report
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            var div = document.createElement( "div" );
+            div.innerHTML = template;
+            div.getElementsByClassName( "title" )[ 0 ].firstElementChild.innerText = title;
+            div.getElementsByClassName( "user" )[ 0 ].innerText = username;
+            div.getElementsByClassName( "subreddit-link" )[ 0 ].innerText = "r/" + subreddit;
+            return div.firstElementChild;
+        }
           </script>
     </head><body><div id="app">
     <nav>
@@ -612,113 +733,4 @@
             Advertise - lifestyles
         </a>
     </footer>
-    </div><script>
-        var $ = document.querySelector.bind( document );
-        var $$ = document.querySelectorAll.bind( document );
-        var createEntry = ( number, votecount, link_or_text, title, username, subreddit, how_long_ago, comments_count ) => {
-            var template = `
-                <div class="entry">
-                    <!-- Numbering -->
-                    <p class="numbering">${number}</p>
-        
-                    <!-- voting -->
-                    <div class="voting">
-                        <a href="#" class="upvote">
-                            <span style="display:none;">entry_5</span>
-                            <i class="fa fa-arrow-up"></i>
-                        </a>
-        
-                        <p class="count">${votecount}</p>
-        
-                        <a href="#" class="downvote">
-                            <span style="display:none;">entry_5</span>
-                            <i class="fa fa-arrow-down"></i>
-                        </a>
-                    </div>
-        
-                    <!-- thumbnail -->
-                    <a href="#" class="thumbnail link ${link_or_text}"></a>
-        
-                    <!-- topic -->
-                    <div class="topic">
-                        <div class="title">
-                            <a href="#" class="link">
-                            </a>
-        
-                            <a href="#" class="domain">
-                                (imgur.com)
-                            </a>
-                        </div>
-        
-                        <div class="details">
-                            <a href="#" class="btn-expand ${link_or_text}"></a>
-        
-                            <div class="inner-details">
-                                <div class="submit-detail">
-                                    <p class="submitted">
-                                        submitted ${how_long_ago} by
-                                    </p>
-        
-                                    <a href="#" class="user">
-                                        ${username}
-                                    </a>
-        
-                                    <p>
-                                        to
-                                    </p>
-        
-                                    <a href="#" class="subscribe" title="subscribe to">
-                                        <i class="fa fa-plus-circle"></i>
-                                    </a>
-        
-                                    <a href="#" class="subreddit-link">
-                                    </a>
-                                </div>
-        
-                                <div class="action-detail">
-                                    <a href="#" class="comments">
-                                        <span class="comments_count">${comments_count}</span>
-                                    </a>
-                                    <a href="#" class="share">
-                                        share
-                                    </a>
-                                    <a href="#" class="save">
-                                        save
-                                    </a>
-                                    <a href="#" class="hide">
-                                        hide
-                                    </a>
-                                    <a href="#" class="report">
-                                        report
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            var div = document.createElement( "div" );
-            div.innerHTML = template;
-            div.getElementsByClassName( "title" )[ 0 ].firstElementChild.innerText = title;
-            div.getElementsByClassName( "user" )[ 0 ].innerText = username;
-            div.getElementsByClassName( "subreddit-link" )[ 0 ].innerText = "r/" + subreddit;
-            return div.firstElementChild;
-        }
-        var entries = [{
-            votecount: 75,
-            link_or_text: "text",
-            title: "Richard and his crew attempted to invent the Ex-Wife Sandwich™ because Nicole neglected to make one for each of them",
-            username: "BoogsterSU2",
-            subreddit: "wheredidthesodago"
-        },{
-            votecount: 75,
-            link_or_text: "link",
-            title: "Richard and his crew attempted to invent the Ex-Wife Sandwich™ because Nicole neglected to make one for each of them",
-            username: "BoogsterSU2",
-            subreddit: "wheredidthesodago"
-        }];
-        entries.forEach( (item, index) => {
-            // $( '.entries' ).append( createEntry( index + 1, item[ "votecount"], item[ "link_or_text"], item[ "title"], item[ "username"], item[ "subreddit"] ) );
-        })
-        
-    </script></body></html>
+    </div>></body></html>
