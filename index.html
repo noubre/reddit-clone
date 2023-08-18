@@ -34,6 +34,7 @@
               }
             //   console.log('content:', content)
               if ( kind === 4550 ) {
+                var now = Math.floor( Date.now() / 1000 );
                     event = JSON.parse( content );
                     var obj = {
                         votecount: 0,
@@ -41,9 +42,10 @@
                         title: extracSubjectFromEvent( event ),
                         username: event.pubkey.substring( 0, 20 ) + "...",
                         subreddit: extractSubredditFromEvent( event ),
+                        how_long_ago: convertHMS( now - event.created_at ),
                     }
                     // console.log( obj );
-                    $( '.entries' ).append( createEntry( 0, obj[ "votecount"], obj[ "link_or_text"], obj[ "title"], obj[ "username"], obj[ "subreddit"] ) );
+                    $( '.entries' ).append( createEntry( 0, obj[ "votecount"], obj[ "link_or_text"], obj[ "title"], obj[ "username"], obj[ "subreddit"], obj[ "how_long_ago"] ) );
 
               }
             })
@@ -152,6 +154,8 @@
               dmsg = decryptedMessage + decipher.final("utf8");
               return dmsg;
             }
+
+
           </script>
           <script>
             var extracSubjectFromEvent = event => {
@@ -178,6 +182,33 @@
                     return true;
                 });
                 if (subreddit) return subreddit;
+            }
+
+            function convertHMS ( value ) {
+                if ( value < 0 ) {
+                    value = 0;
+                }
+                const sec = parseInt(value, 10); // convert value to number if it is string
+                let years = Math.floor(sec / 31536000); // get years
+                let months = Math.floor((sec - (years * 31536000)) / 2592000); // get months
+                let days = Math.floor((sec - (years * 31536000) - (months * 2592000)) / 86400); // get days
+                let hours = Math.floor((sec - (years * 31536000) - (months * 2592000) - (days * 86400)) / 3600);
+                let minutes = Math.floor((sec - (years * 31536000) - (months * 2592000) - (days * 86400) - (hours * 3600)) / 60);
+                let seconds = sec - (years * 31536000) - (months * 2592000) - (days * 86400) - (hours * 3600) - (minutes * 60);
+                var yearsstring = (years > 1) ? `years`:`year`;
+                var monthsstring = (months > 1) ? `months`:`month`;
+                var daysstring = (days > 1) ? `days`:`day`;
+                var hoursstring = (hours > 1) ? `hours`:`hour`;
+                var minutesstring = (minutes > 1) ? `minutes`:`minute`;
+                var secondsstring = (seconds > 1) ? `seconds`:`second`;
+                if ( years > 0 ) return `${years} ${yearsstring} ago`;
+                if ( months > 0 ) return `${months} ${monthsstring} ago`;
+                if ( days > 0 ) return `${days} ${daysstring} ago`;
+                if ( hours > 0 ) return `${hours} ${hoursstring} ago`;
+                if ( minutes > 0 ) return `${minutes} ${minutesstring} ago`;
+                if ( seconds > 0 ) return `${seconds} seconds ago`;
+                return `${seconds} ${secondsstring} ago`;
+
             }
           </script>
     </head><body><div id="app">
@@ -584,7 +615,7 @@
     </div><script>
         var $ = document.querySelector.bind( document );
         var $$ = document.querySelectorAll.bind( document );
-        var createEntry = ( number, votecount, link_or_text, title, username, subreddit ) => {
+        var createEntry = ( number, votecount, link_or_text, title, username, subreddit, how_long_ago, comments_count ) => {
             var template = `
                 <div class="entry">
                     <!-- Numbering -->
@@ -625,7 +656,7 @@
                             <div class="inner-details">
                                 <div class="submit-detail">
                                     <p class="submitted">
-                                        submitted 10 hours ago by
+                                        submitted ${how_long_ago} by
                                     </p>
         
                                     <a href="#" class="user">
@@ -646,7 +677,7 @@
         
                                 <div class="action-detail">
                                     <a href="#" class="comments">
-                                        875 comments
+                                        <span class="comments_count">${comments_count}</span>
                                     </a>
                                     <a href="#" class="share">
                                         share
