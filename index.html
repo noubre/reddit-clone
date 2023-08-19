@@ -11,6 +11,13 @@
 .js"></script>
         <script src="https://bundle.run/noble-secp256k1@1.2.14">  </script>
         <script src="https://bundle.run/browserify-cipher@1.0.1"></script>
+        <style>
+            .post_title, .comments_counter {
+                font-size: 200%;
+                font-weight: bold;
+                margin: 1rem 0
+            }
+        </style>
         <script>
             var {getSharedSecret, schnorr, utils} = nobleSecp256k1
             var crypto = window.crypto
@@ -45,21 +52,51 @@
                             how_long_ago: convertHMS( now - event.created_at ),
                         }
                         // console.log( obj );
-                        $( '.entries' ).append( createEntry( obj[ "votecount"], obj[ "link_or_text"], obj[ "title"], obj[ "username"], obj[ "subreddit"], obj[ "how_long_ago"], 0, event.id ) );
+                        $( '.entries' ).append( createEntry( obj[ "votecount"], obj[ "link_or_text"], obj[ "title"], obj[ "username"], obj[ "subreddit"], obj[ "how_long_ago"], event.id ) );
 
                 }
                 if ( kind === 1 ) {
-                    var now = Math.floor( Date.now() / 1000 );
-                    var div = document.createElement( "div" );
-                    div.innerHTML = `
-                        <div class="metadata"></div>
-                        <div class="post_title"></div>
-                        <div class="post_content"></div>    
+                        if ( $_GET[ "post" ]) {
+                            var now = Math.floor( Date.now() / 1000 );
+                        var div = document.createElement( "div" );
+                        div.innerHTML = `
+                            <div class="metadata"></div>
+                            <div class="post_title"></div>
+                            <div class="post_content"></div>
+                            <div class="comments_counter"><span class="how_many_comments">0</span> comments</div>    
+                            <hr>
+                            `;
+                        div.getElementsByClassName( "metadata" )[ 0 ].innerText = `Posted by ${event.pubkey.substring( 0, 20 ) + "..."} ${convertHMS( now - event.created_at)}`;
+                        div.getElementsByClassName( "post_title" )[ 0 ].innerText = extracSubjectFromEvent( event );
+                        div.getElementsByClassName( "post_content" )[ 0 ].innerText = event.content;
+                        if ( $( '.comments_counter' ) ) {
+                            $( '.how_many_comments' ).innerText = Number( $( '.how_many_comments' ).innerText ) + 1;
+                            var now = Math.floor( Date.now() / 1000 );
+                            var comment_div = document.createElement( "div" );
+                            comment_div.innerHTML = `
+                            <div class="post_content"></div>
+                            <div class="metadata"></div>
+                            <hr>
 
-                    `;
-                    div.getElementsByClassName( "metadata" )[ 0 ].innerText = `Posted by ${event.pubkey.substring( 0, 20 ) + "..."} ${convertHMS( now - event.created_at)}`;
-                    div.getElementsByClassName( "post_title" )[ 0 ].innerText = extracSubjectFromEvent( event );
-                    $( '.entries' ).append( div );
+                            `;
+                            comment_div.getElementsByClassName( "metadata" )[ 0 ].innerText = `Posted by ${event.pubkey.substring( 0, 20 ) + "..."} ${convertHMS( now - event.created_at)}`;
+                            comment_div.getElementsByClassName( "post_content" )[ 0 ].innerText = event.content;
+                            $( '.entries' ).append( comment_div );
+                        } else {
+                            $( '.entries' ).append( div );
+                            var subId = bitcoinjs.ECPair.makeRandom().privateKey.toString("hex").substring(0, 16);
+                            var filter = { "kinds": [1], "#e": [ $_GET[ "post" ] ] };
+                            var subscription = ["REQ", subId, filter];
+                            // console.log('Subscription:', subscription);
+                            socket.send(JSON.stringify(subscription));
+
+                        }
+
+                    } else {
+                        var parent = extractParentOfReply( event );
+                        console.log(parent)
+                        $( `.count_${parent}` ).innerText = Number( $( `.count_${parent}` ).innerText ) + 1;
+                    }  
                 }
             });
         
@@ -73,10 +110,9 @@
               } else {
                 var filter = { "ids": [ $_GET[ "post" ] ] }
               }
-              
-
               var subscription = ["REQ", subId, filter]
               console.log('Subscription:', subscription)
+
               socket.send(JSON.stringify(subscription));
               //put this stuff inside the “open” event listener from earlier
               var event = {
@@ -236,7 +272,7 @@
 
             }
 
-            var createEntry = ( votecount, link_or_text, title, username, subreddit, how_long_ago, comments_count, post_id ) => {
+            var createEntry = ( votecount, link_or_text, title, username, subreddit, how_long_ago, post_id ) => {
                 counter = counter + 1;
                 var url = window.location.href;
                 url = url.substring( 0, url.indexOf( "?" ) );
@@ -264,7 +300,7 @@
                     </div>
         
                     <!-- thumbnail -->
-                    <a href="#" class="thumbnail link ${link_or_text}"></a>
+                    <a href="${url}" class="thumbnail link ${link_or_text}"></a>
         
                     <!-- topic -->
                     <div class="topic">
@@ -278,7 +314,7 @@
                         </div>
         
                         <div class="details">
-                            <a href="#" class="btn-expand ${link_or_text}"></a>
+                            <a href="${url}" class="btn-expand ${link_or_text}"></a>
         
                             <div class="inner-details">
                                 <div class="submit-detail">
@@ -303,8 +339,8 @@
                                 </div>
         
                                 <div class="action-detail">
-                                    <a href="#" class="comments">
-                                        <span class="comments_count">${comments_count}</span>
+                                    <a href="${url}" class="comments">
+                                        <span class="comments_count count_${post_id}">0</span> comments
                                     </a>
                                     <a href="#" class="share">
                                         share
@@ -329,7 +365,24 @@
             div.getElementsByClassName( "title" )[ 0 ].firstElementChild.innerText = title;
             div.getElementsByClassName( "user" )[ 0 ].innerText = username;
             div.getElementsByClassName( "subreddit-link" )[ 0 ].innerText = "r/" + subreddit;
+            var subId = bitcoinjs.ECPair.makeRandom().privateKey.toString("hex").substring(0, 16);
+            var filter = { "kinds": [1], "#e": [ post_id ] };
+            var subscription = ["REQ", subId, filter];
+            // console.log('Subscription:', subscription);
+            socket.send(JSON.stringify(subscription));
             return div.firstElementChild;
+        }
+        var extractParentOfReply = event => {
+            var parent = null;
+            event.tags.every( item => {
+                if ( item[ 0 ] == "e" ) {
+                    parent = item[ 1 ];
+                    return;
+                }
+                return true;
+            });
+            if (parent) return parent;
+            return "no_parent";
         }
           </script>
     </head><body><div id="app">
